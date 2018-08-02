@@ -108,20 +108,110 @@ kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl versio
 
 ```
 
-# 7. Join the worker nodes to the cluster
+# 7-a. Join the worker nodes to the cluster
 * After finish step 6, you has been completed setup master node of your kubernetes cluster. To setup other machine to join into your cluster
 * Prepare your machine as step 1
 Run command kubeadm join with params is the secret key of your kubernetes cluser and your master node ip as STEP 4
 
 
-# 8. Allow a single-host cluster
+# 7-b. Allow a single-host cluster
 * Kubernetes is about multi-host clustering - so by default containers cannot run on master nodes in the cluster. Since we only have one node - we'll taint it so that it can run containers for us.
  ```
  kubectl taint nodes --all node-role.kubernetes.io/master-
  ```
 
-# 9. get cluster
+# 8. get cluster
 
 ```
 kubectl get all --namespace=kube-system
+```
+# 9. install helm
+```
+curl -Lo /tmp/helm-linux-amd64.tar.gz https://kubernetes-helm.storage.googleapis.com/helm-v2.9.0-linux-amd64.tar.gz
+tar -xvf /tmp/helm-linux-amd64.tar.gz -C /tmp/
+chmod +x  /tmp/linux-amd64/helm && sudo mv /tmp/linux-amd64/helm /usr/local/bin/
+
+```
+# 10. install istio 
+
+```
+curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.0.0 sh 
+
+cd istio-1.0.0
+
+echo "export PATH="$PATH:$PWD/bin"" | tee -a ~/.bashrc
+
+source ~/.bashrc
+
+```
+## 10. Configure Istio CRD
+* Istio has extended Kubernetes via Custom Resource Definitions (CRD). Deploy the extensions by applying crds.yaml.
+
+```
+
+kubectl apply -f install/kubernetes/helm/istio/templates/crds.yaml -n istio-system
+
+```
+# 11. Install Istio with default mutual TLS authentication
+* To Install Istio and enforce mutual TLS authentication by default, use the yaml istio-demo-auth.yaml
+
+```
+kubectl apply -f install/kubernetes/istio-demo-auth.yaml
+
+```
+# 12. Verify istio (wait untill STATUS become Running/Completed )
+```
+kubectl get pods -n istio-system
+kubectl get svc -n istio-system
+
+```
+* Istio Architecture
+The previous step deployed the Istio Pilot, Mixer, Ingress-Controller, and Egress-Controller, and the Istio CA (Certificate Authority).
+
+* Pilot - 
+Responsible for configuring the Envoy and Mixer at runtime.
+
+* Envoy - 
+Sidecar proxies per microservice to handle ingress/egress traffic between services in the cluster and from a service to external services. The proxies form a secure microservice mesh providing a rich set of functions like discovery, rich layer-7 routing, circuit breakers, policy enforcement and telemetry recording/reporting functions.
+
+* Mixer - 
+Create a portability layer on top of infrastructure backends. Enforce policies such as ACLs, rate limits, quotas, authentication, request tracing and telemetry collection at an infrastructure level.
+
+* Ingress/Egress - 
+Configure path based routing.
+
+* Istio CA - 
+Secures service to service communication over TLS. Providing a key management system to automate key and certificate generation, distribution, rotation, and revocation
+
+* The overall architecture is shown below.
+
+![](/images/istio-arch.png)
+
+# 13. install sample project (https://github.com/istio/istio/tree/master/samples/bookinfo)
+
+* When deploying an application that will be extended via Istio, the Kubernetes YAML definitions are extended via kube-inject. This will configure the services proxy sidecar (Envoy), Mixers, Certificates and Init Containers.
+```
+cd istio-1.0.0
+
+kubectl apply -f <(istioctl kube-inject -f samples/bookinfo/platform/kube/bookinfo.yaml)
+
+kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml
+
+kubectl get pods
+```
+# 14 Confirm the gateway has been created:
+```
+kubectl get gateway
+```
+# 15 determine INGRESS_HOST ,INGRESS_PORT and SECURE_INGRESS_PORT
+```
+export INGRESS_HOST=$(kubectl get po -l istio=ingressgateway -n istio-system -o 'jsonpath={.items[0].status.hostIP}')
+
+export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}')
+export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}')
+
+```
+# 16 Set GATEWAY_URL:
+```
+export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
 ```
