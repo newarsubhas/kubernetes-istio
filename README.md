@@ -84,6 +84,7 @@ sudo cp /etc/kubernetes/admin.conf $HOME/
 sudo chown $(id -u):$(id -g) $HOME/admin.conf
 export KUBECONFIG=$HOME/admin.conf
 echo "export KUBECONFIG=$HOME/admin.conf" | tee -a ~/.bashrc
+source ~/.bashrc
 
 ```
 
@@ -117,7 +118,7 @@ Run command kubeadm join with params is the secret key of your kubernetes cluser
 ## 7-b. Allow a single-host cluster
 * Kubernetes is about multi-host clustering - so by default containers cannot run on master nodes in the cluster. Since we only have one node - we'll taint it so that it can run containers for us.
  ```
- kubectl taint nodes --all node-role.kubernetes.io/master-
+kubectl taint nodes --all node-role.kubernetes.io/master-
  ```
 
 ## 8. get cluster
@@ -191,7 +192,18 @@ Secures service to service communication over TLS. Providing a key management sy
 
 * When deploying an application that will be extended via Istio, the Kubernetes YAML definitions are extended via kube-inject. This will configure the services proxy sidecar (Envoy), Mixers, Certificates and Init Containers.
 
+* create custom resource services (Tiller, servicegraph, grafana, jaeger, prometheus)
+* edit externalIPs
+
 ```
+cd kubernetes-istio
+
+kubectl apply -f customresourceservices.yaml
+
+```
+
+```
+
 cd istio-1.0.0
 
 kubectl apply -f <(istioctl kube-inject -f samples/bookinfo/platform/kube/bookinfo.yaml)
@@ -216,11 +228,6 @@ export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressga
 ## 16. Set GATEWAY_URL:
 ```
 export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
-```
-## 17. create custom resource services (Tiller, servicegraph, grafana, jaeger, prometheus)
-
-```
-kubectl apply -f customresourceservices.yaml
 ```
 ## 18. Apply default destination rules
 
@@ -271,5 +278,4 @@ done
 
 ```
 http://YourPublicIP:3000/dashboard/db/istio-mesh-dashboard
-```
 ```

@@ -18,7 +18,7 @@ spec:
     app: servicegraph
   type: ClusterIP
   externalIPs:
-    - 35.153.132.67
+    - 10.0.3.237
 ---
 apiVersion: v1
 kind: Service
@@ -41,7 +41,7 @@ spec:
   sessionAffinity: None
   type: ClusterIP
   externalIPs:
-    - 35.153.132.67
+    - 10.0.3.237
 ---
 apiVersion: v1
 kind: Service
@@ -64,7 +64,7 @@ spec:
     app: jaeger
   type: ClusterIP
   externalIPs:
-    - 35.153.132.67
+    - 10.0.3.237
 ---
 apiVersion: v1
 kind: Service
@@ -83,7 +83,7 @@ spec:
     app: prometheus
   type: ClusterIP
   externalIPs:
-    - 35.153.132.67
+    - 10.0.3.237
 ---
 apiVersion: v1
 kind: Service
@@ -139,4 +139,4 @@ spec:
     istio: ingressgateway
   type: LoadBalancer
   externalIPs:
-  - 35.153.132.67
+  - 10.0.3.237
